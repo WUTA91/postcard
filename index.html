@@ -1,0 +1,1291 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>明信片 · Postcard</title>
+<style>
+:root {
+  --bg1: #f0ede8;
+  --bg2: #e8e4dd;
+  --paper: #faf6ed;
+  --paper-shadow: rgba(0,0,0,0.08);
+  --ink: #1f1d1a;
+  --ink-light: #5a554d;
+  --ink-faint: #9a938a;
+  --olive: #5c6b52;
+  --olive-dark: #45523d;
+  --brick: #b5543f;
+  --line: #e2ddd4;
+  --field-bg: #faf8f5;
+  --card-bg: rgba(255,255,255,0.85);
+  --card-border: rgba(0,0,0,0.06);
+}
+html[data-theme="dark"] {
+  --bg1: #1a1815;
+  --bg2: #2a2520;
+  --paper: #2a2620;
+  --paper-shadow: rgba(0,0,0,0.5);
+  --ink: #e8e0d0;
+  --ink-light: #b0a890;
+  --ink-faint: #706858;
+  --olive: #8a9a7c;
+  --olive-dark: #a0b090;
+  --brick: #d48470;
+  --line: #4a4538;
+  --field-bg: rgba(0,0,0,0.2);
+}
+
+/* 主题：雾霾蓝 */
+html[data-theme="ocean"] {
+  --bg1: #d8dfe5;
+  --bg2: #c2ccd6;
+  --paper: #f0f4f7;
+  --paper-shadow: rgba(0,0,0,0.12);
+  --ink: #2c3a47;
+  --ink-light: #5a6b7a;
+  --ink-faint: #8a9aa8;
+  --olive: #4a6b7a;
+  --olive-dark: #3a5a6a;
+  --brick: #b56554;
+  --line: #b8c4ce;
+  --field-bg: rgba(255,255,255,0.6);
+}
+
+/* 主题：胶片橙棕 */
+html[data-theme="film"] {
+  --bg1: #e8d8c8;
+  --bg2: #d8c0a8;
+  --paper: #faf0e0;
+  --paper-shadow: rgba(80,40,0,0.15);
+  --ink: #4a3020;
+  --ink-light: #7a5a40;
+  --ink-faint: #a88870;
+  --olive: #b5653a;
+  --olive-dark: #a05028;
+  --brick: #c8453a;
+  --line: #d8c0a8;
+  --field-bg: rgba(255,255,255,0.5);
+}
+
+/* 主题：极简灰白 */
+html[data-theme="minimal"] {
+  --bg1: #f0f0f0;
+  --bg2: #e0e0e0;
+  --paper: #ffffff;
+  --paper-shadow: rgba(0,0,0,0.08);
+  --ink: #1a1a1a;
+  --ink-light: #666666;
+  --ink-faint: #999999;
+  --olive: #1a1a1a;
+  --olive-dark: #333333;
+  --brick: #cc3333;
+  --line: #dddddd;
+  --field-bg: #f8f8f8;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+  color: var(--ink);
+  min-height: 100vh;
+  background: linear-gradient(135deg, var(--bg1) 0%, var(--bg2) 100%);
+  line-height: 1.6;
+  transition: background 0.3s, color 0.3s;
+}
+
+.topbar {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 40px;
+}
+.brand {
+  font-family: Georgia, "Noto Serif SC", serif;
+  font-size: 20px;
+  font-weight: 600;
+}
+.brand small {
+  display: block;
+  font-family: sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-top: 2px;
+  font-weight: 400;
+}
+.theme-picker {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  background: var(--paper);
+  padding: 8px 12px;
+  border-radius: 100px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.theme-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 0.2s;
+}
+.theme-dot:hover { transform: scale(1.15); }
+.theme-dot.active {
+  border-color: var(--olive);
+  transform: scale(1.1);
+}
+
+.stage {
+  position: relative;
+  z-index: 2;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 20px 40px 60px;
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 48px;
+  align-items: start;
+}
+
+/* ===== 明信片预览 ===== */
+.postcard-wrap {
+  position: sticky;
+  top: 30px;
+}
+.postcard {
+  perspective: 1500px;
+  transform: rotate(-1deg);
+  transition: transform 0.4s cubic-bezier(0.22,1,0.36,1);
+}
+.postcard:hover {
+  transform: rotate(0deg) translateY(-3px);
+}
+.postcard-inner {
+  position: relative;
+  width: 100%;
+  background: #fff;
+  padding: 20px;
+  box-shadow:
+    0 2px 4px rgba(0,0,0,0.08),
+    0 12px 32px rgba(0,0,0,0.12),
+    0 32px 64px rgba(0,0,0,0.1);
+  transform-style: preserve-3d;
+  transition: transform 0.8s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+.postcard.show-back .postcard-inner {
+  transform: rotateY(180deg);
+}
+
+/* 正面 */
+.card-front {
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  background: #ffffff;
+  position: relative;
+  overflow: hidden;
+  transition: aspect-ratio 0.3s ease;
+  padding: 16px 16px 48px 16px; /* 拍立得白边，底部更宽 */
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.card-front .photo-frame {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  background: #f5f0e3;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  transform: rotate(-0.5deg); /* 轻微旋转，像随手贴的 */
+}
+.card-front .photo {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  display: none;
+}
+.card-front.has-photo .photo { display: block; }
+.card-front.has-photo .photo-frame { background: #000; }
+.card-front .placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #b0a890;
+}
+.card-front.has-photo .placeholder { display: none; }
+.placeholder .icon { font-size: 48px; margin-bottom: 12px; }
+.placeholder .text { font-family: Georgia, serif; font-size: 18px; }
+
+.card-front .front-caption {
+  position: absolute;
+  bottom: 10px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-family: Georgia, "Noto Serif SC", serif;
+  font-style: italic;
+  font-size: 20px;
+  color: #3a352c;
+  display: none;
+}
+.card-front.has-photo .front-caption.has-text { display: block; }
+
+.card-front .front-postmark {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 56px;
+  height: 56px;
+  border: 2px solid rgba(92,107,82,0.4);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 7px;
+  font-family: monospace;
+  color: rgba(92,107,82,0.5);
+  text-align: center;
+  transform: rotate(-5deg);
+  line-height: 1.3;
+}
+
+/* 背面 */
+.card-back {
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  background: #faf6ed;
+  position: absolute;
+  inset: 0;
+  transition: aspect-ratio 0.3s ease;
+  overflow: hidden;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform: rotateY(180deg);
+}
+
+/* 背面排版舞台：固定 3:2 设计稿尺寸，按卡片实际大小缩放，
+   保证邮票/邮戳/地址线/留言区在任何照片比例下都不会错位 */
+.back-stage {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 600px;
+  height: 400px;
+  transform-origin: center center;
+  /* --card-w / --card-h 由 JS 写入，兜底用 3:2 */
+  transform: translate(-50%, -50%) scale(var(--back-scale, 1));
+}
+/* 背面纸张纹理 */
+.card-back::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.04' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E");
+  pointer-events: none;
+}
+.card-back .inner-border {
+  position: absolute;
+  inset: 20px;
+  border: 1px solid #d8d2c4;
+  pointer-events: none;
+}
+/* 双线边框效果 */
+.card-back .inner-border::after {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border: 1px solid #e0dacb;
+}
+.card-back .middle-line {
+  position: absolute;
+  top: 20px;
+  bottom: 20px;
+  left: 50%;
+  width: 1px;
+  background: #d8d2c4;
+}
+
+/* 以下定位坐标与 Canvas 导出的设计稿（600x400）逐一对应，
+   改这里就必须同步改 renderBack()，两边才能保持一致 */
+
+/* 邮票 */
+.stamp {
+  position: absolute;
+  top: 36px;
+  right: 36px;
+  width: 90px;
+  height: 110px;
+  background: #fefcf7;
+  padding: 8px 6px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+/* 邮票齿孔 - 上下左右 */
+.stamp::before,
+.stamp::after {
+  content: '';
+  position: absolute;
+  left: -2px;
+  right: -2px;
+  height: 10px;
+  background: radial-gradient(circle at 5px 5px, #faf6ed 4px, transparent 4.5px);
+  background-size: 15px 10px;
+}
+.stamp::before { top: -8px; }
+.stamp::after { bottom: -8px; transform: scaleY(-1); }
+
+.stamp .stamp-scene {
+  width: 100%;
+  height: 70%;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(180deg, #e8d5b0 0%, #d4c098 40%, #8a9a7c 40%, #6b7c5e 100%);
+  border: 1px solid #e0d8c8;
+}
+/* 邮票里的太阳 */
+.stamp .stamp-scene::before {
+  content: '';
+  position: absolute;
+  top: 12%;
+  right: 15%;
+  width: 18px;
+  height: 18px;
+  background: #d4845a;
+  border-radius: 50%;
+}
+/* 邮票里的小山 */
+.stamp .stamp-scene::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 55%;
+  background: linear-gradient(135deg, #5c6b52 0%, #4a5a42 100%);
+  clip-path: polygon(0% 100%, 15% 50%, 35% 75%, 55% 30%, 75% 65%, 100% 45%, 100% 100%);
+}
+.stamp .stamp-value {
+  text-align: center;
+  font-family: Georgia, serif;
+  font-size: 14px;
+  font-weight: bold;
+  color: #6b6355;
+  margin-top: 6px;
+  letter-spacing: 0.5px;
+}
+
+/* 邮戳：设计稿坐标为圆心 (254,176) r=30 → 左上角 (224,146) */
+.postmark {
+  position: absolute;
+  top: 146px;
+  right: 316px;
+  width: 60px;
+  height: 60px;
+  border: 2px solid rgba(60,65,70,0.3);
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: monospace;
+  color: rgba(60,65,70,0.35);
+  transform: rotate(-10deg);
+  text-align: center;
+  line-height: 1.5;
+  mix-blend-mode: multiply;
+}
+.postmark::after {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  border: 1px solid rgba(60,65,70,0.3);
+  border-radius: 50%;
+}
+.postmark .pm-city {
+  font-size: 8px;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+}
+.postmark .pm-date {
+  font-size: 7px;
+  margin-top: 2px;
+}
+
+/* 地址线：width = W/2 - 60 = 240，与 renderBack() 的 aw 一致 */
+.address-lines {
+  position: absolute;
+  left: 36px;
+  bottom: 36px;
+  width: 240px;
+}
+.address-lines .label {
+  font-size: 11px;
+  color: #9a9180;
+  margin-bottom: 10px;
+  font-family: Georgia, serif;
+  font-style: italic;
+}
+.address-lines .line {
+  height: 1px;
+  background: #c8c0ae;
+  margin-bottom: 22px;
+}
+.address-lines .line:last-child {
+  margin-bottom: 0;
+}
+
+/* 留言区：与 renderBack() 一致，left=W/2+32=332，right=36，top=158 */
+.message-area {
+  position: absolute;
+  left: 332px;
+  top: 158px;
+  right: 36px;
+  font-family: Georgia, "Noto Serif SC", serif;
+  font-size: 14px;
+  line-height: 1.7;
+  color: #4a4540;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.message-area .placeholder-text {
+  color: #c0b8a5;
+  font-style: italic;
+}
+
+/* 背面小照片框 */
+.back-photo {
+  position: absolute;
+  right: 36px;
+  bottom: 60px;
+  width: 70px;
+  height: 56px;
+  background: #fff;
+  padding: 3px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  transform: rotate(3deg);
+}
+.back-photo .back-photo-img {
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+  display: none;
+}
+.back-photo.has-photo .back-photo-img { display: block; }
+.back-photo .back-photo-placeholder {
+  width: 100%;
+  height: 100%;
+  background: #f0ebe0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  color: #c0b8a5;
+}
+.back-photo.has-photo .back-photo-placeholder { display: none; }
+
+.card-back .footer-mark {
+  position: absolute;
+  bottom: 10px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-family: monospace;
+  font-size: 8px;
+  color: #9a9180;
+  letter-spacing: 2px;
+}
+
+/* 正反面切换 */
+.side-tabs {
+  display: flex;
+  margin-top: 28px;
+  margin-left: 20px;
+  width: fit-content;
+}
+.side-tab {
+  padding: 8px 20px;
+  border: 1.5px solid var(--ink-faint);
+  background: transparent;
+  cursor: pointer;
+  font-family: Georgia, serif;
+  font-size: 13px;
+  color: var(--ink-light);
+}
+.side-tab:first-child {
+  border-radius: 20px 0 0 20px;
+  border-right: none;
+}
+.side-tab:last-child {
+  border-radius: 0 20px 20px 0;
+}
+.side-tab.active {
+  background: var(--olive);
+  color: var(--paper);
+  border-color: var(--olive);
+}
+
+/* ===== 工具栏 ===== */
+.toolbar {
+  background: var(--card-bg);
+  backdrop-filter: blur(20px);
+  padding: 28px;
+  border-radius: 20px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.06);
+  border: 1px solid var(--card-border);
+  transition: background 0.3s;
+}
+.tool-section {
+  margin-bottom: 22px;
+  padding-bottom: 22px;
+  border-bottom: 1px dashed var(--line);
+}
+.tool-section:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+.tool-label {
+  font-family: Georgia, serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--olive-dark);
+  margin-bottom: 10px;
+}
+.dropzone {
+  border: 2px dashed var(--line);
+  padding: 28px 16px;
+  text-align: center;
+  cursor: pointer;
+  color: var(--ink-faint);
+  font-size: 13px;
+  background: var(--field-bg);
+  border-radius: 12px;
+  transition: all 0.2s;
+}
+.dropzone:hover { border-color: var(--olive); color: var(--olive-dark); }
+.dropzone.has-photo { border-style: solid; border-color: var(--olive); color: var(--olive-dark); }
+.dropzone input { display: none; }
+
+.field {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1.5px solid var(--line);
+  background: var(--field-bg);
+  font-size: 14px;
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  border-radius: 10px;
+  transition: border-color 0.2s;
+}
+.field:focus { outline: none; border-color: var(--olive); }
+textarea.field { min-height: 80px; resize: vertical; }
+
+.btn {
+  width: 100%;
+  padding: 12px 20px;
+  border: none;
+  cursor: pointer;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 8px;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+}
+.btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+.btn:last-child { margin-bottom: 0; }
+.btn-primary { background: var(--olive); color: white; }
+.btn-outline { background: transparent; color: var(--olive-dark); border: 1.5px solid var(--line); }
+.btn-text { background: transparent; color: var(--ink-faint); font-family: sans-serif; font-size: 13px; font-weight: 400; padding: 8px; border-radius: 8px; }
+.hint { font-size: 12px; color: var(--ink-faint); margin-top: 6px; }
+
+.made-by {
+  position: fixed;
+  bottom: 20px;
+  right: 30px;
+  font-family: Georgia, serif;
+  font-size: 11px;
+  color: var(--ink-faint);
+  z-index: 10;
+}
+
+@media (max-width: 860px) {
+  .stage { grid-template-columns: 1fr; gap: 32px; padding: 10px 20px 80px; }
+  .postcard-wrap { position: static; }
+  .topbar { padding: 20px; }
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    明信片
+    <small>Postcard Maker</small>
+  </div>
+  <div class="topbar-right">
+    <div class="theme-picker" id="themePicker">
+      <span class="theme-dot active" data-theme="light" title="复古米黄" style="background:#e8e2d5"></span>
+      <span class="theme-dot" data-theme="dark" title="暗夜棕黑" style="background:#1a1815"></span>
+      <span class="theme-dot" data-theme="ocean" title="雾霾蓝" style="background:#c2ccd6"></span>
+      <span class="theme-dot" data-theme="film" title="胶片橙棕" style="background:#d8c0a8"></span>
+      <span class="theme-dot" data-theme="minimal" title="极简灰白" style="background:#f0f0f0"></span>
+    </div>
+  </div>
+</div>
+
+<div class="stage">
+  <div class="postcard-wrap">
+    <div class="postcard" id="postcardEl">
+      <div class="postcard-inner">
+      <!-- 正面 -->
+      <div class="card-front" id="cardFront">
+        <div class="photo-frame">
+          <div class="photo" id="frontPhoto"></div>
+          <div class="placeholder">
+            <div class="icon">✈</div>
+            <div class="text">Add your travel photo</div>
+          </div>
+        </div>
+        <div class="front-caption" id="frontCaption"></div>
+        <div class="front-postmark">WUJING<br>EST.2026</div>
+      </div>
+
+      <!-- 背面 -->
+      <div class="card-back" id="cardBack">
+        <div class="back-stage" id="backStage">
+        <div class="inner-border"></div>
+        <div class="middle-line"></div>
+
+        <div class="stamp">
+          <div class="stamp-scene"></div>
+          <div class="stamp-value">1.20</div>
+        </div>
+
+        <div class="postmark">
+          <div class="pm-city">WUJING</div>
+          <div class="pm-date">POST</div>
+        </div>
+
+        <div class="address-lines">
+          <div class="label">To:</div>
+          <div class="line"></div>
+          <div class="line"></div>
+          <div class="line"></div>
+          <div class="line"></div>
+        </div>
+
+        <div class="message-area" id="messageArea">
+          <span class="placeholder-text">Dear friend,</span>
+        </div>
+
+        <!-- 背面小照片框 -->
+        <div class="back-photo" id="backPhoto">
+          <div class="back-photo-placeholder">✈</div>
+        </div>
+
+        <div class="footer-mark">✦ WUJING POSTCARD ✦</div>
+        </div>
+      </div>
+      </div>
+    </div>
+
+    <div class="side-tabs">
+      <button class="side-tab active" data-side="front">正面</button>
+      <button class="side-tab" data-side="back">背面</button>
+    </div>
+  </div>
+
+  <aside class="toolbar">
+    <div class="tool-section">
+      <div class="tool-label">上传照片</div>
+      <div class="dropzone" id="dropzone">
+        点击或拖拽上传旅行照片
+        <input type="file" id="photoInput" accept="image/*">
+      </div>
+    </div>
+    <div class="tool-section">
+      <div class="tool-label">正面短句</div>
+      <input type="text" class="field" id="frontText" placeholder="写一句想说的话…" maxlength="30">
+      <div class="hint">印在明信片底部，最多 30 字</div>
+    </div>
+    <div class="tool-section">
+      <div class="tool-label">背面留言</div>
+      <textarea class="field" id="backText" placeholder="在背面写下你的话…" maxlength="200"></textarea>
+      <div class="hint">最多 200 字，自动排版</div>
+    </div>
+    <div class="tool-section">
+      <div class="tool-label">导出图片</div>
+      <button class="btn btn-primary" id="exportFront">导出正面</button>
+      <button class="btn btn-primary" id="exportBack">导出背面</button>
+      <button class="btn btn-primary" id="exportBoth">正反面拼合</button>
+    </div>
+    <div class="tool-section">
+      <button class="btn btn-text" id="resetBtn">清空草稿</button>
+      <div class="hint">内容自动保存在浏览器里</div>
+    </div>
+  </aside>
+</div>
+
+<div class="made-by">WUJING・無境</div>
+
+<script>
+var postcardEl = document.getElementById('postcardEl');
+var cardFront = document.getElementById('cardFront');
+var frontPhoto = document.getElementById('frontPhoto');
+var frontCaption = document.getElementById('frontCaption');
+var messageArea = document.getElementById('messageArea');
+var frontTextEl = document.getElementById('frontText');
+var backTextEl = document.getElementById('backText');
+var dropzone = document.getElementById('dropzone');
+var photoInput = document.getElementById('photoInput');
+var cardBack = document.getElementById('cardBack');
+var backStage = document.getElementById('backStage');
+var currentSide = 'front';
+var photoUrl = null;
+var photoImg = null; // 已加载的图片对象，导出时复用
+
+// 背面设计稿尺寸（与 .back-stage 的 width/height 保持一致）
+var DESIGN_W = 600;
+var DESIGN_H = 400;
+
+// 按卡片实际尺寸等比缩放背面排版，比例失真时也不会错位
+function syncBackScale() {
+  var w = cardBack.clientWidth;
+  var h = cardBack.clientHeight;
+  if (!w || !h) return;
+  // 取较小的缩放比，保证内容完整落在卡片内（cover 会裁切，contain 才有留白）
+  var scale = Math.min(w / DESIGN_W, h / DESIGN_H);
+  backStage.style.setProperty('--back-scale', scale);
+}
+window.addEventListener('resize', syncBackScale);
+
+// 主题切换
+var themeDots = document.querySelectorAll('.theme-dot');
+for (var i = 0; i < themeDots.length; i++) {
+  themeDots[i].addEventListener('click', function() {
+    var theme = this.getAttribute('data-theme');
+    document.documentElement.setAttribute('data-theme', theme);
+    for (var j = 0; j < themeDots.length; j++) themeDots[j].classList.remove('active');
+    this.classList.add('active');
+    try { localStorage.setItem('wujing-postcard-theme', theme); } catch(e) {}
+  });
+}
+(function initTheme() {
+  var saved = null;
+  try { saved = localStorage.getItem('wujing-postcard-theme'); } catch(e) {}
+  if (saved) {
+    document.documentElement.setAttribute('data-theme', saved);
+    for (var i = 0; i < themeDots.length; i++) {
+      if (themeDots[i].getAttribute('data-theme') === saved) {
+        themeDots[i].classList.add('active');
+      } else {
+        themeDots[i].classList.remove('active');
+      }
+    }
+  }
+})();
+
+// 上传
+dropzone.addEventListener('click', function() { photoInput.click(); });
+photoInput.addEventListener('change', function(e) {
+  if (e.target.files[0]) loadPhoto(e.target.files[0]);
+});
+dropzone.addEventListener('dragover', function(e) { e.preventDefault(); dropzone.classList.add('dragover'); });
+dropzone.addEventListener('drop', function(e) {
+  e.preventDefault();
+  dropzone.classList.remove('dragover');
+  var f = e.dataTransfer.files[0];
+  if (f && f.type.startsWith('image/')) loadPhoto(f);
+});
+
+function loadPhoto(file) {
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    photoUrl = e.target.result;
+    frontPhoto.style.backgroundImage = 'url(' + photoUrl + ')';
+    cardFront.classList.add('has-photo');
+    // 同步更新背面小照片
+    var backPhoto = document.getElementById('backPhoto');
+    backPhoto.classList.add('has-photo');
+    var backPhotoImg = backPhoto.querySelector('.back-photo-img');
+    if (!backPhotoImg) {
+      backPhotoImg = document.createElement('div');
+      backPhotoImg.className = 'back-photo-img';
+      backPhoto.appendChild(backPhotoImg);
+    }
+    backPhotoImg.style.backgroundImage = 'url(' + photoUrl + ')';
+
+    // 根据照片原始比例调整正反面比例，不裁剪
+    var img = new Image();
+    img.onload = function() {
+      photoImg = img;
+      var ratio = img.width / img.height;
+      cardFront.style.aspectRatio = ratio + ' / 1';
+      cardBack.style.aspectRatio = ratio + ' / 1';
+      // 比例变化会触发过渡动画，等布局稳定后再校准背面缩放
+      syncBackScale();
+      requestAnimationFrame(syncBackScale);
+      setTimeout(syncBackScale, 320);
+    };
+    img.src = photoUrl;
+    dropzone.classList.add('has-photo');
+    dropzone.childNodes[0].textContent = '✓ 已上传 · 点击换图';
+    saveDraft();
+  };
+  reader.readAsDataURL(file);
+}
+
+// 正反面切换
+var tabs = document.querySelectorAll('.side-tab');
+for (var i = 0; i < tabs.length; i++) {
+  tabs[i].addEventListener('click', function() {
+    for (var j = 0; j < tabs.length; j++) tabs[j].classList.remove('active');
+    this.classList.add('active');
+    currentSide = this.getAttribute('data-side');
+    if (currentSide === 'back') postcardEl.classList.add('show-back');
+    else postcardEl.classList.remove('show-back');
+  });
+}
+
+// 输入监听
+frontTextEl.addEventListener('input', function() {
+  var val = frontTextEl.value.trim();
+  frontCaption.textContent = val;
+  if (val) frontCaption.classList.add('has-text');
+  else frontCaption.classList.remove('has-text');
+  saveDraft();
+});
+
+backTextEl.addEventListener('input', function() {
+  var val = backTextEl.value.trim();
+  if (val) {
+    messageArea.innerHTML = '';
+    messageArea.textContent = val;
+  } else {
+    messageArea.innerHTML = '<span class="placeholder-text">Dear friend,</span>';
+  }
+  saveDraft();
+});
+
+// 草稿
+function saveDraft() {
+  try {
+    localStorage.setItem('wujing-postcard-draft', JSON.stringify({
+      frontText: frontTextEl.value,
+      backText: backTextEl.value
+    }));
+  } catch(e) {}
+}
+function loadDraft() {
+  try {
+    var raw = localStorage.getItem('wujing-postcard-draft');
+    if (!raw) return;
+    var d = JSON.parse(raw);
+    frontTextEl.value = d.frontText || '';
+    backTextEl.value = d.backText || '';
+    // 触发更新
+    var event = new Event('input');
+    frontTextEl.dispatchEvent(event);
+    backTextEl.dispatchEvent(event);
+  } catch(e) {}
+}
+
+// ===== 导出：用 Canvas 按设计稿重绘正反面 =====
+// 导出的思路是把预览里的排版按固定设计稿尺寸（600x400）重画一遍，
+// 这样竖图 / 方图都能正确导出，不受预览缩放影响。
+
+var FONT_SERIF = 'Georgia, "Noto Serif SC", serif';
+var FONT_SANS = '-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif';
+
+// 读取当前主题下的纸张/墨色，让导出图跟随主题
+function themeColors() {
+  var cs = getComputedStyle(document.documentElement);
+  function v(name, fallback) {
+    var val = cs.getPropertyValue(name);
+    return (val && val.trim()) || fallback;
+  }
+  var paper = v('--paper', '#faf6ed');
+  return {
+    paper: paper,
+    ink: v('--ink', '#1f1d1a'),
+    line: '#d8d2c4'
+  };
+}
+
+// 直接以 dataURL 绘制图片；没有照片时画占位
+function drawCoverImage(ctx, img, x, y, w, h) {
+  if (!img) return false;
+  var ir = img.width / img.height;
+  var br = w / h;
+  var dw, dh;
+  if (ir > br) { dh = h; dw = h * ir; } else { dw = w; dh = w / ir; }
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x, y, w, h);
+  ctx.clip();
+  ctx.drawImage(img, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh);
+  ctx.restore();
+  return true;
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+// 按宽度换行（支持中英文与手动换行）
+function wrapText(ctx, text, maxWidth) {
+  var lines = [];
+  var paragraphs = String(text).split('\n');
+  for (var p = 0; p < paragraphs.length; p++) {
+    var chars = paragraphs[p].split('');
+    var line = '';
+    for (var i = 0; i < chars.length; i++) {
+      var test = line + chars[i];
+      if (ctx.measureText(test).width > maxWidth && line) {
+        lines.push(line);
+        line = chars[i];
+      } else {
+        line = test;
+      }
+    }
+    lines.push(line);
+  }
+  return lines;
+}
+
+// ---- 背面 ----
+function renderBack(ctx) {
+  var W = DESIGN_W, H = DESIGN_H;
+  var c = themeColors();
+
+  // 纸张底色
+  ctx.fillStyle = c.paper;
+  ctx.fillRect(0, 0, W, H);
+
+  // 噪点纹理（与预览一致，用 SVG 噪声平铺）
+  // 双线边框
+  ctx.strokeStyle = c.line;
+  ctx.lineWidth = 1;
+  ctx.strokeRect(20.5, 20.5, W - 41, H - 41);
+  ctx.strokeStyle = '#e0dacb';
+  ctx.strokeRect(24.5, 24.5, W - 49, H - 49);
+
+  // 中线
+  ctx.strokeStyle = c.line;
+  ctx.beginPath();
+  ctx.moveTo(W / 2 + 0.5, 20);
+  ctx.lineTo(W / 2 + 0.5, H - 20);
+  ctx.stroke();
+
+  // ---- 邮票 ----
+  var sx = W - 36 - 90, sy = 36, sw = 90, sh = 110;
+
+  // 邮票底（先画纸体，再用纸色打齿孔，避免被后续填充盖住）
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.15)';
+  ctx.shadowBlur = 6;
+  ctx.shadowOffsetY = 2;
+  ctx.fillStyle = '#fefcf7';
+  ctx.fillRect(sx, sy, sw, sh);
+  ctx.restore();
+
+  // 齿孔：沿四边打出半圆缺口
+  ctx.save();
+  ctx.fillStyle = c.paper;
+  var i;
+  for (i = 0; i < 6; i++) {
+    var px = sx + 7.5 + i * 15;
+    ctx.beginPath(); ctx.arc(px, sy, 5, 0, Math.PI, false); ctx.fill();          // 上边
+    ctx.beginPath(); ctx.arc(px, sy + sh, 5, Math.PI, 0, false); ctx.fill();     // 下边
+  }
+  for (i = 0; i < 7; i++) {
+    var py = sy + 7.5 + i * 15;
+    ctx.beginPath(); ctx.arc(sx, py, 5, -Math.PI / 2, Math.PI / 2, false); ctx.fill();        // 左边
+    ctx.beginPath(); ctx.arc(sx + sw, py, 5, Math.PI / 2, -Math.PI / 2, false); ctx.fill();   // 右边
+  }
+  ctx.restore();
+
+  // 邮票画面
+  var inx = sx + 6, iny = sy + 8, inw = sw - 12, inh = sh * 0.7;
+  ctx.save();
+  ctx.beginPath(); ctx.rect(inx, iny, inw, inh); ctx.clip();
+  var sky = ctx.createLinearGradient(0, iny, 0, iny + inh);
+  sky.addColorStop(0, '#e8d5b0');
+  sky.addColorStop(0.4, '#d4c098');
+  sky.addColorStop(0.4001, '#8a9a7c');
+  sky.addColorStop(1, '#6b7c5e');
+  ctx.fillStyle = sky;
+  ctx.fillRect(inx, iny, inw, inh);
+  // 太阳
+  ctx.fillStyle = '#d4845a';
+  ctx.beginPath();
+  ctx.arc(inx + inw * 0.85, iny + inh * 0.12 + 9, 9, 0, Math.PI * 2);
+  ctx.fill();
+  // 山
+  ctx.fillStyle = '#5c6b52';
+  ctx.beginPath();
+  var mh = inh * 0.55, my = iny + inh;
+  ctx.moveTo(inx, my);
+  ctx.lineTo(inx + inw * 0.15, my - mh * 0.5);
+  ctx.lineTo(inx + inw * 0.35, my - mh * 0.25);
+  ctx.lineTo(inx + inw * 0.55, my - mh * 0.7);
+  ctx.lineTo(inx + inw * 0.75, my - mh * 0.35);
+  ctx.lineTo(inx + inw, my - mh * 0.55);
+  ctx.lineTo(inx + inw, my);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+  ctx.strokeStyle = '#e0d8c8';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(inx + 0.5, iny + 0.5, inw - 1, inh - 1);
+
+  // 邮票面值
+  ctx.fillStyle = '#6b6355';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = 'bold 14px ' + FONT_SERIF;
+  ctx.fillText('1.20', sx + sw / 2, iny + inh + (sh - 8 - inh) / 2 + 2);
+
+  // ---- 邮戳 ----
+  // 盖在中线左侧的空白处，避开邮票、面值与右栏留言文字
+  var pcx = W / 2 - 46, pcy = sy + sh + 30;
+  ctx.save();
+  ctx.globalAlpha = 0.9;
+  ctx.strokeStyle = 'rgba(60,65,70,0.35)';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(pcx, pcy, 30, 0, Math.PI * 2); ctx.stroke();
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(pcx, pcy, 22, 0, Math.PI * 2); ctx.stroke();
+  ctx.fillStyle = 'rgba(60,65,70,0.45)';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = 'bold 9px monospace';
+  ctx.fillText('WUJING', pcx, pcy - 5);
+  ctx.font = '8px monospace';
+  ctx.fillText('POST', pcx, pcy + 6);
+  ctx.restore();
+
+  // ---- 地址线 ----
+  var ax = 36, aw = W / 2 - 60;
+  var ay = H - 36 - (11 + 10 + 4 * 22);
+  ctx.fillStyle = '#9a9180';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+  ctx.font = 'italic 11px ' + FONT_SERIF;
+  ctx.fillText('To:', ax, ay + 11);
+  ctx.strokeStyle = '#c8c0ae';
+  ctx.lineWidth = 1;
+  var ly = ay + 11 + 10;
+  for (var k = 0; k < 4; k++) {
+    ctx.beginPath();
+    ctx.moveTo(ax, ly + 0.5);
+    ctx.lineTo(ax + aw, ly + 0.5);
+    ctx.stroke();
+    ly += 22;
+  }
+
+  // ---- 留言区 ----
+  // 右栏文字：上方避开邮票，右边界停在卡片内边距，底部给小照片留出空间。
+  // 邮票只占右上角，所以正文可以比"邮票左侧"更宽，只要首行下移到邮票底边之下。
+  var msg = backTextEl.value.trim();
+  var mx = W / 2 + 32;
+  var mw = (W - 36) - mx;
+  var msgTop = sy + sh + 12;            // 起点在邮票下方
+  var msgBottom = H - 96;               // 底部给背面小照片留位置
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+  ctx.font = '14px ' + FONT_SERIF;
+  var lineH = 14 * 1.7;
+  if (msg) {
+    ctx.fillStyle = '#4a4540';
+    var lines = wrapText(ctx, msg, mw);
+    var maxLines = Math.max(1, Math.floor((msgBottom - msgTop) / lineH));
+    if (lines.length > maxLines) {
+      lines = lines.slice(0, maxLines);
+      lines[maxLines - 1] = lines[maxLines - 1].slice(0, -1) + '…';
+    }
+    for (var i2 = 0; i2 < lines.length; i2++) {
+      ctx.fillText(lines[i2], mx, msgTop + 14 + i2 * lineH);
+    }
+  } else {
+    ctx.fillStyle = '#c0b8a5';
+    ctx.font = 'italic 14px ' + FONT_SERIF;
+    ctx.fillText('Dear friend,', mx, msgTop + 14);
+  }
+
+  // ---- 背面小照片 ----
+  var bx = W - 36 - 70, by = H - 60 - 56, bw = 70, bh = 56;
+  ctx.save();
+  ctx.translate(bx + bw / 2, by + bh / 2);
+  ctx.rotate(3 * Math.PI / 180);
+  ctx.translate(-(bx + bw / 2), -(by + bh / 2));
+  ctx.shadowColor = 'rgba(0,0,0,0.15)';
+  ctx.shadowBlur = 6;
+  ctx.shadowOffsetY = 2;
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(bx, by, bw, bh);
+  ctx.shadowColor = 'transparent';
+  if (photoImg) {
+    drawCoverImage(ctx, photoImg, bx + 3, by + 3, bw - 6, bh - 6);
+  } else {
+    ctx.fillStyle = '#f0ebe0';
+    ctx.fillRect(bx + 3, by + 3, bw - 6, bh - 6);
+    ctx.fillStyle = '#c0b8a5';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = '24px ' + FONT_SANS;
+    ctx.fillText('✈', bx + bw / 2, by + bh / 2);
+  }
+  ctx.restore();
+
+  // ---- 底部标记 ----
+  ctx.fillStyle = '#9a9180';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  ctx.font = '8px monospace';
+  ctx.fillText('✦ WUJING POSTCARD ✦', W / 2, H - 12);
+}
+
+// ---- 导出流程 ----
+var EXPORT_SCALE = 2; // 2 倍分辨率，导出 1200x800
+
+function makeCanvas(w, h) {
+  var cv = document.createElement('canvas');
+  cv.width = w;
+  cv.height = h;
+  return cv;
+}
+
+// 正反面拼合时统一成 3:2，避免照片比例不同导致两块画布尺寸不一致
+function renderFrontSquare(ctx) {
+  var W = DESIGN_W, H = DESIGN_H;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, W, H);
+  var padX = 16, padTop = 16, padBottom = 48;
+  var fx = padX, fy = padTop;
+  var fw = W - padX * 2, fh = H - padTop - padBottom;
+  ctx.fillStyle = '#f5f0e3';
+  ctx.fillRect(fx, fy, fw, fh);
+  if (photoImg) {
+    drawCoverImage(ctx, photoImg, fx, fy, fw, fh);
+  } else {
+    ctx.fillStyle = '#b0a890';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = '48px ' + FONT_SANS;
+    ctx.fillText('✈', fx + fw / 2, fy + fh / 2 - 22);
+    ctx.font = '18px ' + FONT_SERIF;
+    ctx.fillText('Add your travel photo', fx + fw / 2, fy + fh / 2 + 20);
+  }
+  var caption = frontTextEl.value.trim();
+  if (caption && photoImg) {
+    ctx.fillStyle = '#3a352c';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'alphabetic';
+    ctx.font = 'italic 20px ' + FONT_SERIF;
+    ctx.fillText(caption, W / 2, H - 18);
+  }
+  var cx = W - 20 - 28, cy = 20 + 28;
+  ctx.strokeStyle = 'rgba(92,107,82,0.4)';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(cx, cy, 28, 0, Math.PI * 2); ctx.stroke();
+  ctx.fillStyle = 'rgba(92,107,82,0.6)';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = '8px monospace';
+  ctx.fillText('WUJING', cx, cy - 5);
+  ctx.fillText('EST.2026', cx, cy + 6);
+}
+
+function downloadCanvas(cv, filename) {
+  try {
+    var a = document.createElement('a');
+    a.download = filename;
+    a.href = cv.toDataURL('image/png');
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  } catch (err) {
+    alert('导出失败：' + err.message);
+  }
+}
+
+function exportFront() {
+  var cv = makeCanvas(DESIGN_W * EXPORT_SCALE, DESIGN_H * EXPORT_SCALE);
+  var ctx = cv.getContext('2d');
+  ctx.scale(EXPORT_SCALE, EXPORT_SCALE);
+  renderFrontSquare(ctx);
+  downloadCanvas(cv, 'postcard-front.png');
+}
+
+function exportBack() {
+  var cv = makeCanvas(DESIGN_W * EXPORT_SCALE, DESIGN_H * EXPORT_SCALE);
+  var ctx = cv.getContext('2d');
+  ctx.scale(EXPORT_SCALE, EXPORT_SCALE);
+  renderBack(ctx);
+  downloadCanvas(cv, 'postcard-back.png');
+}
+
+// 正反面上下拼合，中间留一条白缝
+function exportBoth() {
+  var gap = 24;
+  var cv = makeCanvas(DESIGN_W * EXPORT_SCALE, (DESIGN_H * 2 + gap) * EXPORT_SCALE);
+  var ctx = cv.getContext('2d');
+  ctx.scale(EXPORT_SCALE, EXPORT_SCALE);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, DESIGN_W, DESIGN_H * 2 + gap);
+  renderFrontSquare(ctx);
+  ctx.save();
+  ctx.translate(0, DESIGN_H + gap);
+  renderBack(ctx);
+  ctx.restore();
+  downloadCanvas(cv, 'postcard-both.png');
+}
+
+document.getElementById('exportFront').addEventListener('click', exportFront);
+document.getElementById('exportBack').addEventListener('click', exportBack);
+document.getElementById('exportBoth').addEventListener('click', exportBoth);
+
+// 重置
+document.getElementById('resetBtn').addEventListener('click', function() {
+  if (!confirm('确定清空所有内容吗？')) return;
+  photoUrl = null;
+  photoImg = null;
+  frontPhoto.style.backgroundImage = '';
+  cardFront.classList.remove('has-photo');
+  // 恢复默认比例
+  cardFront.style.aspectRatio = '';
+  cardBack.style.aspectRatio = '';
+  syncBackScale();
+  // 重置背面小照片
+  var backPhoto = document.getElementById('backPhoto');
+  backPhoto.classList.remove('has-photo');
+  var backPhotoImg = backPhoto.querySelector('.back-photo-img');
+  if (backPhotoImg) backPhotoImg.remove();
+  frontTextEl.value = '';
+  backTextEl.value = '';
+  dropzone.classList.remove('has-photo');
+  dropzone.childNodes[0].textContent = '点击或拖拽上传旅行照片';
+  frontCaption.classList.remove('has-text');
+  messageArea.innerHTML = '<span class="placeholder-text">Dear friend,</span>';
+  try { localStorage.removeItem('wujing-postcard-draft'); } catch(e) {}
+});
+
+// 启动
+loadDraft();
+syncBackScale();
+window.addEventListener('load', syncBackScale);
+</script>
+
+</body>
+</html>
